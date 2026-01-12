@@ -39,11 +39,11 @@ export default function Home() {
 
     try {
       // First try live API (works locally/on VPS)
-      let response = await fetch('/api/appointments');
+      let response = await fetch('api/appointments');
 
       // Fallback to static JSON if API is not found or fails (for IONOS Static Export)
       if (!response.ok) {
-        response = await fetch('/appointments.json');
+        response = await fetch('appointments.json');
       }
 
       const data: ApiResponse = await response.json();
