@@ -83,6 +83,34 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [fetchAppointments, settings.signageRefreshInterval, mounted]);
 
+  // Filter out appointments in the past
+  const visibleAppointments = appointments.filter(apt => {
+    try {
+      // Parse German date format "Mo. 13.01." or "13.01."
+      const dateParts = apt.date.match(/(\d{2})\.(\d{2})\./);
+      if (!dateParts) return true;
+
+      const day = parseInt(dateParts[1]);
+      const month = parseInt(dateParts[2]) - 1; // 0-indexed months
+      const [hours, minutes] = apt.time.split(':').map(Number);
+
+      const aptDate = new Date();
+      aptDate.setMonth(month);
+      aptDate.setDate(day);
+      aptDate.setHours(hours, minutes, 0, 0);
+
+      // Handle year wrap (if scraped in Dec for Jan)
+      const now = new Date();
+      if (month < now.getMonth() - 6) {
+        aptDate.setFullYear(now.getFullYear() + 1);
+      }
+
+      return aptDate >= now;
+    } catch (e) {
+      return true; // Show on error to be safe
+    }
+  });
+
   const formatLastUpdated = (dateString: string) => {
     if (!mounted) return '';
     const date = new Date(dateString);
@@ -141,7 +169,7 @@ export default function Home() {
         </div>
       )}
 
-      {!loading && !error && appointments.length === 0 && (
+      {!loading && !error && visibleAppointments.length === 0 && (
         <div className={styles.emptyContainer}>
           <Sparkles size={48} />
           <h2>Keine Termine verfügbar</h2>
@@ -149,16 +177,16 @@ export default function Home() {
         </div>
       )}
 
-      {!loading && !error && appointments.length > 0 && (
+      {!loading && !error && visibleAppointments.length > 0 && (
         <>
           <div className={styles.statsBar}>
             <span className={styles.statsBadge}>
-              {appointments.length} freie Termine gefunden
+              {visibleAppointments.length} freie Termine gefunden
             </span>
           </div>
 
           <div className={styles.grid}>
-            {appointments.map((appointment, index) => (
+            {visibleAppointments.map((appointment, index) => (
               <AppointmentCard
                 key={`${appointment.date}-${appointment.time}-${index}`}
                 {...appointment}

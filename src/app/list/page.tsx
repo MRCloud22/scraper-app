@@ -64,10 +64,36 @@ function ListContent() {
         fetchAppointments();
     }, [fetchAppointments]);
 
+    // Filter out appointments in the past
+    const futureAppointments = appointments.filter(apt => {
+        try {
+            const dateParts = apt.date.match(/(\d{2})\.(\d{2})\./);
+            if (!dateParts) return true;
+
+            const day = parseInt(dateParts[1]);
+            const month = parseInt(dateParts[2]) - 1;
+            const [hours, minutes] = apt.time.split(':').map(Number);
+
+            const aptDate = new Date();
+            aptDate.setMonth(month);
+            aptDate.setDate(day);
+            aptDate.setHours(hours, minutes, 0, 0);
+
+            const now = new Date();
+            if (month < now.getMonth() - 6) {
+                aptDate.setFullYear(now.getFullYear() + 1);
+            }
+
+            return aptDate >= now;
+        } catch (e) {
+            return true;
+        }
+    });
+
     // Pagination calculations
-    const totalPages = Math.ceil(appointments.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(futureAppointments.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const visibleAppointments = appointments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const visibleAppointments = futureAppointments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     const goToPage = (page: number) => {
         setCurrentPage(page);
