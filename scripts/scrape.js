@@ -57,23 +57,42 @@ async function scrape() {
             timeout: 60000
         });
 
-        console.log('Scrolling...');
-        await page.evaluate(() => window.scrollBy(0, 1500));
-        await new Promise(r => setTimeout(r, 2000));
+        console.log('Scrolling to load all appointments...');
+        // Multiple small scrolls are often more effective for lazy loading
+        for (let i = 0; i < 5; i++) {
+            await page.evaluate(() => window.scrollBy(0, 800));
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        console.log('Waiting for appointment rows...');
+
+        // Wait for the main container or specific rows
         await page.waitForSelector('a.table-row', { timeout: 30000 });
+
+        // Wait a bit more for React hydration if necessary
+        await new Promise(r => setTimeout(r, 2000));
 
         const basicAppointments = await page.evaluate(() => {
             const rows = document.querySelectorAll('a.table-row');
+            console.log(`Found ${rows.length} raw rows on page`);
+
             return Array.from(rows).map(row => {
                 const cells = row.querySelectorAll('.table-cell');
-                const treatmentEl = row.querySelector('.one-line span');
+                const treatmentEl = row.querySelector('.one-line span') || row.querySelector('.table-cell:nth-child(3)');
                 const href = row.getAttribute('href') || '';
+
+                // Debug log inside browser (won't show in Github logs unless handled, but good for reference)
+                const date = cells[0]?.textContent?.trim() || '';
+                const time = cells[1]?.textContent?.trim() || '';
+                const treatment = treatmentEl?.textContent?.trim() || '';
+                const price = cells[3]?.textContent?.trim() || '';
+
                 return {
-                    date: cells[0]?.textContent?.trim() || '',
-                    time: cells[1]?.textContent?.trim() || '',
-                    treatment: treatmentEl?.textContent?.trim() || '',
-                    price: cells[3]?.textContent?.trim() || '',
+                    date,
+                    time,
+                    treatment,
+                    price,
                     bookingUrl: href.startsWith('http') ? href : `https://shop.beautykuppel-therme-badaibling.de/${href}`
                 };
             }).filter(a => a.date && a.time && a.treatment);
