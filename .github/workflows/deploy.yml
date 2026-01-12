@@ -1,0 +1,43 @@
+name: Build and Deploy to IONOS
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Alle 15 Minuten
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Erlaubt manuelles Starten
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Scraper
+        run: node scripts/scrape.js
+
+      - name: Build Next.js
+        run: npm run build
+        env:
+          NEXT_PUBLIC_EXPORT: 'true'
+
+      - name: Deploy to IONOS via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./out/
+          server-dir: ./ # Anpassen an IONOS Verzeichnis (z.B. /appointments/)
+          dangerous-clean-slate: false # Verhindert das Löschen anderer Dateien
