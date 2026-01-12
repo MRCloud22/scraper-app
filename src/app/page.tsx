@@ -41,16 +41,17 @@ export default function Home() {
 
     try {
       const isExport = process.env.NEXT_PUBLIC_EXPORT === 'true';
+      const cacheBuster = `?t=${Date.now()}`;
       let response;
 
       if (isExport) {
         // Direct fetch for static export (avoids 404 on API)
-        response = await fetch('appointments.json');
+        response = await fetch(`appointments.json${cacheBuster}`, { cache: 'no-store' });
       } else {
         // Try live API first locally
-        response = await fetch('api/appointments');
+        response = await fetch(`api/appointments${cacheBuster}`, { cache: 'no-store' });
         if (!response.ok) {
-          response = await fetch('appointments.json');
+          response = await fetch(`appointments.json${cacheBuster}`, { cache: 'no-store' });
         }
       }
 
