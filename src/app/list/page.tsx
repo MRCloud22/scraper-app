@@ -34,15 +34,16 @@ function ListContent() {
     const fetchAppointments = useCallback(async () => {
         try {
             const isExport = process.env.NEXT_PUBLIC_EXPORT === 'true';
+            const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
             const cacheBuster = `?t=${Date.now()}`;
             let response;
 
             if (isExport) {
-                response = await fetch(`appointments.json${cacheBuster}`, { cache: 'no-store' });
+                response = await fetch(`${basePath}/appointments.json${cacheBuster}`, { cache: 'no-store' });
             } else {
-                response = await fetch(`api/appointments${cacheBuster}`, { cache: 'no-store' });
+                response = await fetch(`${basePath}/api/appointments${cacheBuster}`, { cache: 'no-store' });
                 if (!response.ok) {
-                    response = await fetch(`appointments.json${cacheBuster}`, { cache: 'no-store' });
+                    response = await fetch(`${basePath}/appointments.json${cacheBuster}`, { cache: 'no-store' });
                 }
             }
 
