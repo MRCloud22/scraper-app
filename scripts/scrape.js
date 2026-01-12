@@ -99,6 +99,9 @@ async function scrape() {
         });
 
         console.log(`Found ${basicAppointments.length} appointments. Fetching images...`);
+        if (basicAppointments.length > 0) {
+            console.log('Sample appointment:', JSON.stringify(basicAppointments[0], null, 2));
+        }
 
         const imageCache = {};
         const uniqueTemplates = new Map();
@@ -128,6 +131,7 @@ async function scrape() {
             lastUpdated: new Date().toISOString()
         };
 
+        console.log(`Final data count: ${data.appointments.length}`);
         fs.writeFileSync(OUTPUT_FILE, JSON.stringify(data, null, 2));
         console.log(`Successfully saved to ${OUTPUT_FILE}`);
 

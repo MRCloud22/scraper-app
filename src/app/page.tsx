@@ -47,6 +47,7 @@ export default function Home() {
       }
 
       const data: ApiResponse = await response.json();
+      console.log('Fetched data:', data);
 
       if (data.success) {
         setAppointments(data.appointments);
