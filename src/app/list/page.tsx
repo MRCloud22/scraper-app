@@ -121,7 +121,7 @@ function ListContent() {
                     <div className={styles.cell}>Datum</div>
                     <div className={styles.cell}>Uhrzeit</div>
                     <div className={styles.cell}>Leistung</div>
-                    <div className={styles.cell}>Preis</div>
+                    <div className={styles.cell + ' ' + styles.price}>Preis</div>
                     <div className={styles.cell}></div>
                 </div>
 
