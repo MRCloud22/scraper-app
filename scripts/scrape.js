@@ -66,9 +66,14 @@ async function scrape() {
 
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
         console.log('Waiting for appointment rows...');
-
-        // Wait for the main container or specific rows
-        await page.waitForSelector('a.table-row', { timeout: 30000 });
+        let rowsExist = false;
+        try {
+            // Wait for the main container or specific rows
+            await page.waitForSelector('a.table-row', { timeout: 15000 });
+            rowsExist = true;
+        } catch (e) {
+            console.log('No appointment rows found (Shop might be fully booked).');
+        }
 
         // Wait a bit more for React hydration if necessary
         await new Promise(r => setTimeout(r, 2000));
@@ -76,49 +81,51 @@ async function scrape() {
         const allAppointments = [];
         const seenKeys = new Set();
 
-        const paginationDots = await page.$$('.slideTabs a');
-        console.log(`Found ${paginationDots.length} pagination pages in the appointment box.`);
+        if (rowsExist) {
+            const paginationDots = await page.$$('.slideTabs a');
+            console.log(`Found ${paginationDots.length} pagination pages in the appointment box.`);
 
-        const pagesToClick = paginationDots.length > 0 ? paginationDots.length : 1;
+            const pagesToClick = paginationDots.length > 0 ? paginationDots.length : 1;
 
-        for (let i = 0; i < pagesToClick; i++) {
-            if (paginationDots.length > 0) {
-                console.log(`Scraping page ${i + 1}...`);
-                await paginationDots[i].click();
-                await new Promise(r => setTimeout(r, 1000)); // Wait for animation/load
-            }
+            for (let i = 0; i < pagesToClick; i++) {
+                if (paginationDots.length > 0) {
+                    console.log(`Scraping page ${i + 1}...`);
+                    await paginationDots[i].click();
+                    await new Promise(r => setTimeout(r, 1000)); // Wait for animation/load
+                }
 
-            const pageData = await page.evaluate(() => {
-                // Find all containers that might hold appointments
-                // Based on the structure, we want the ones near the title "Eine Auswahl der nächsten freien Termine"
-                const sections = Array.from(document.querySelectorAll('div'));
-                const selectionSection = sections.find(s => s.textContent.includes('Eine Auswahl der nächsten freien Termine') && s.querySelector('a.table-row'));
+                const pageData = await page.evaluate(() => {
+                    // Find all containers that might hold appointments
+                    // Based on the structure, we want the ones near the title "Eine Auswahl der nächsten freien Termine"
+                    const sections = Array.from(document.querySelectorAll('div'));
+                    const selectionSection = sections.find(s => s.textContent.includes('Eine Auswahl der nächsten freien Termine') && s.querySelector('a.table-row'));
 
-                if (!selectionSection) return [];
+                    if (!selectionSection) return [];
 
-                const rows = selectionSection.querySelectorAll('a.table-row');
-                return Array.from(rows).map(row => {
-                    const cells = row.querySelectorAll('.table-cell');
-                    const treatmentEl = row.querySelector('.one-line span') || row.querySelector('.table-cell:nth-child(3)');
-                    const href = row.getAttribute('href') || '';
+                    const rows = selectionSection.querySelectorAll('a.table-row');
+                    return Array.from(rows).map(row => {
+                        const cells = row.querySelectorAll('.table-cell');
+                        const treatmentEl = row.querySelector('.one-line span') || row.querySelector('.table-cell:nth-child(3)');
+                        const href = row.getAttribute('href') || '';
 
-                    const date = cells[0]?.textContent?.trim() || '';
-                    const time = cells[1]?.textContent?.trim() || '';
-                    const treatment = treatmentEl?.textContent?.trim() || '';
-                    const price = cells[3]?.textContent?.trim() || '';
+                        const date = cells[0]?.textContent?.trim() || '';
+                        const time = cells[1]?.textContent?.trim() || '';
+                        const treatment = treatmentEl?.textContent?.trim() || '';
+                        const price = cells[3]?.textContent?.trim() || '';
 
-                    const rawHref = href.startsWith('http') ? href : `https://shop.beautykuppel-therme-badaibling.de/${href}`;
-                    const bookingUrl = rawHref.replace(/([?&])dsId=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
+                        const rawHref = href.startsWith('http') ? href : `https://shop.beautykuppel-therme-badaibling.de/${href}`;
+                        const bookingUrl = rawHref.replace(/([?&])dsId=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
 
-                    return { date, time, treatment, price, bookingUrl };
-                }).filter(a => a.date && a.time && a.treatment);
-            });
+                        return { date, time, treatment, price, bookingUrl };
+                    }).filter(a => a.date && a.time && a.treatment);
+                });
 
-            for (const apt of pageData) {
-                const key = `${apt.date}-${apt.time}-${apt.treatment}`;
-                if (!seenKeys.has(key)) {
-                    seenKeys.add(key);
-                    allAppointments.push(apt);
+                for (const apt of pageData) {
+                    const key = `${apt.date}-${apt.time}-${apt.treatment}`;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        allAppointments.push(apt);
+                    }
                 }
             }
         }

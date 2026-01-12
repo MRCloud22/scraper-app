@@ -126,7 +126,7 @@ function ListContent() {
                     <div className={styles.cell}></div>
                 </div>
 
-                {appointments.length === 0 && !error && (
+                {futureAppointments.length === 0 && !error && (
                     <div className={styles.empty}>
                         Aktuell sind keine freien Termine vorhanden.
                     </div>
