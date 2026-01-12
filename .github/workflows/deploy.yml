@@ -2,7 +2,7 @@ name: Build and Deploy to GitHub Pages
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Alle 15 Minuten
+    - cron: '*/5 * * * *' # Alle 5 Minuten
   push:
     branches:
       - main
