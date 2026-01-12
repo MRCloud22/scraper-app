@@ -88,12 +88,16 @@ async function scrape() {
                 const treatment = treatmentEl?.textContent?.trim() || '';
                 const price = cells[3]?.textContent?.trim() || '';
 
+                const rawHref = href.startsWith('http') ? href : `https://shop.beautykuppel-therme-badaibling.de/${href}`;
+                // Strip dsId parameter so the shop falls back to general suggestions if the specific slot is gone
+                const bookingUrl = rawHref.replace(/([?&])dsId=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
+
                 return {
                     date,
                     time,
                     treatment,
                     price,
-                    bookingUrl: href.startsWith('http') ? href : `https://shop.beautykuppel-therme-badaibling.de/${href}`
+                    bookingUrl
                 };
             }).filter(a => a.date && a.time && a.treatment);
         });
