@@ -73,34 +73,57 @@ async function scrape() {
         // Wait a bit more for React hydration if necessary
         await new Promise(r => setTimeout(r, 2000));
 
-        const basicAppointments = await page.evaluate(() => {
-            const rows = document.querySelectorAll('a.table-row');
-            console.log(`Found ${rows.length} raw rows on page`);
+        const allAppointments = [];
+        const seenKeys = new Set();
 
-            return Array.from(rows).map(row => {
-                const cells = row.querySelectorAll('.table-cell');
-                const treatmentEl = row.querySelector('.one-line span') || row.querySelector('.table-cell:nth-child(3)');
-                const href = row.getAttribute('href') || '';
+        const paginationDots = await page.$$('.slideTabs a');
+        console.log(`Found ${paginationDots.length} pagination pages in the appointment box.`);
 
-                // Debug log inside browser (won't show in Github logs unless handled, but good for reference)
-                const date = cells[0]?.textContent?.trim() || '';
-                const time = cells[1]?.textContent?.trim() || '';
-                const treatment = treatmentEl?.textContent?.trim() || '';
-                const price = cells[3]?.textContent?.trim() || '';
+        const pagesToClick = paginationDots.length > 0 ? paginationDots.length : 1;
 
-                const rawHref = href.startsWith('http') ? href : `https://shop.beautykuppel-therme-badaibling.de/${href}`;
-                // Strip dsId parameter so the shop falls back to general suggestions if the specific slot is gone
-                const bookingUrl = rawHref.replace(/([?&])dsId=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
+        for (let i = 0; i < pagesToClick; i++) {
+            if (paginationDots.length > 0) {
+                console.log(`Scraping page ${i + 1}...`);
+                await paginationDots[i].click();
+                await new Promise(r => setTimeout(r, 1000)); // Wait for animation/load
+            }
 
-                return {
-                    date,
-                    time,
-                    treatment,
-                    price,
-                    bookingUrl
-                };
-            }).filter(a => a.date && a.time && a.treatment);
-        });
+            const pageData = await page.evaluate(() => {
+                // Find all containers that might hold appointments
+                // Based on the structure, we want the ones near the title "Eine Auswahl der nächsten freien Termine"
+                const sections = Array.from(document.querySelectorAll('div'));
+                const selectionSection = sections.find(s => s.textContent.includes('Eine Auswahl der nächsten freien Termine') && s.querySelector('a.table-row'));
+
+                if (!selectionSection) return [];
+
+                const rows = selectionSection.querySelectorAll('a.table-row');
+                return Array.from(rows).map(row => {
+                    const cells = row.querySelectorAll('.table-cell');
+                    const treatmentEl = row.querySelector('.one-line span') || row.querySelector('.table-cell:nth-child(3)');
+                    const href = row.getAttribute('href') || '';
+
+                    const date = cells[0]?.textContent?.trim() || '';
+                    const time = cells[1]?.textContent?.trim() || '';
+                    const treatment = treatmentEl?.textContent?.trim() || '';
+                    const price = cells[3]?.textContent?.trim() || '';
+
+                    const rawHref = href.startsWith('http') ? href : `https://shop.beautykuppel-therme-badaibling.de/${href}`;
+                    const bookingUrl = rawHref.replace(/([?&])dsId=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
+
+                    return { date, time, treatment, price, bookingUrl };
+                }).filter(a => a.date && a.time && a.treatment);
+            });
+
+            for (const apt of pageData) {
+                const key = `${apt.date}-${apt.time}-${apt.treatment}`;
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    allAppointments.push(apt);
+                }
+            }
+        }
+
+        const basicAppointments = allAppointments;
 
         console.log(`Found ${basicAppointments.length} appointments. Fetching images...`);
         if (basicAppointments.length > 0) {
