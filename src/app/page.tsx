@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Loader2, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
 import AppointmentCard from '@/components/AppointmentCard';
+import { useSettings } from '@/context/SettingsContext';
 import styles from './page.module.css';
 
 interface Appointment {
@@ -22,6 +23,7 @@ interface ApiResponse {
 }
 
 export default function Home() {
+  const { settings } = useSettings();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,12 +40,18 @@ export default function Home() {
     setError(null);
 
     try {
-      // First try live API (works locally/on VPS)
-      let response = await fetch('api/appointments');
+      const isExport = process.env.NEXT_PUBLIC_EXPORT === 'true';
+      let response;
 
-      // Fallback to static JSON if API is not found or fails (for IONOS Static Export)
-      if (!response.ok) {
+      if (isExport) {
+        // Direct fetch for static export (avoids 404 on API)
         response = await fetch('appointments.json');
+      } else {
+        // Try live API first locally
+        response = await fetch('api/appointments');
+        if (!response.ok) {
+          response = await fetch('appointments.json');
+        }
       }
 
       const data: ApiResponse = await response.json();
@@ -65,6 +73,14 @@ export default function Home() {
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
+
+  // Periodic refresh
+  useEffect(() => {
+    if (!mounted) return;
+    const intervalMs = settings.signageRefreshInterval * 60 * 1000;
+    const timer = setInterval(fetchAppointments, intervalMs);
+    return () => clearInterval(timer);
+  }, [fetchAppointments, settings.signageRefreshInterval, mounted]);
 
   const formatLastUpdated = (dateString: string) => {
     if (!mounted) return '';

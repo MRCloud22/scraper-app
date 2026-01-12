@@ -28,12 +28,18 @@ export default function SignagePage() {
 
     const fetchAppointments = useCallback(async () => {
         try {
-            // First try live API (works locally)
-            let response = await fetch('api/appointments');
+            const isExport = process.env.NEXT_PUBLIC_EXPORT === 'true';
+            let response;
 
-            // Fallback to static JSON if API fails (for IONOS)
-            if (!response.ok) {
+            if (isExport) {
+                // Direct fetch for static export (avoids 404 on API)
                 response = await fetch('appointments.json');
+            } else {
+                // Try live API first locally
+                response = await fetch('api/appointments');
+                if (!response.ok) {
+                    response = await fetch('appointments.json');
+                }
             }
 
             const data = await response.json();
