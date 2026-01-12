@@ -20,6 +20,7 @@ export default function SignagePage() {
     const [currentDate, setCurrentDate] = useState('');
     const [visibleStart, setVisibleStart] = useState(0);
     const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
     const VISIBLE_COUNT = 6;
 
     useEffect(() => {
@@ -27,6 +28,7 @@ export default function SignagePage() {
     }, []);
 
     const fetchAppointments = useCallback(async () => {
+        setLoading(true);
         try {
             const isExport = process.env.NEXT_PUBLIC_EXPORT === 'true';
             const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
@@ -50,6 +52,8 @@ export default function SignagePage() {
             }
         } catch (error) {
             console.error('Error fetching appointments:', error);
+        } finally {
+            setLoading(false);
         }
     }, []);
 
@@ -170,10 +174,15 @@ export default function SignagePage() {
                     Gönnen Sie sich eine Auszeit – fragen Sie an der Rezeption nach freien Terminen
                 </p>
 
-                {appointments.length === 0 ? (
+                {loading && appointments.length === 0 ? (
+                    <div className={styles.emptyState}>
+                        <Sparkles size={64} className={styles.spinning} />
+                        <p>Termine werden geladen...</p>
+                    </div>
+                ) : futureAppointments.length === 0 ? (
                     <div className={styles.emptyState}>
                         <Sparkles size={64} />
-                        <p>Termine werden geladen...</p>
+                        <p>Aktuell sind keine freien Termine vorhanden.</p>
                     </div>
                 ) : (
                     <div className={styles.appointmentsGrid}>
