@@ -27,6 +27,9 @@ jobs:
       - name: Run Scraper
         run: node scripts/scrape.js
 
+      - name: Remove API routes for static export
+        run: rm -rf src/app/api
+
       - name: Build Next.js
         run: npm run build
         env:
