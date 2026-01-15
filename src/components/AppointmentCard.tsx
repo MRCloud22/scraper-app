@@ -29,7 +29,7 @@ export default function AppointmentCard({
         >
             {imageUrl && (
                 <div className={styles.cardImage}>
-                    <img src={imageUrl} alt={treatment} />
+                    <img src={imageUrl} alt={treatment} loading="lazy" />
                 </div>
             )}
             <div className={styles.cardGlow} />

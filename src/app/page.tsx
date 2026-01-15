@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Loader2, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
 import AppointmentCard from '@/components/AppointmentCard';
 import { useSettings } from '@/context/SettingsContext';
+import { filterPastAppointments } from '@/utils/filterAppointments';
 import styles from './page.module.css';
 
 interface Appointment {
@@ -84,33 +85,11 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [fetchAppointments, settings.signageRefreshInterval, mounted]);
 
-  // Filter out appointments in the past
-  const visibleAppointments = appointments.filter(apt => {
-    try {
-      // Parse German date format "Mo. 13.01." or "13.01."
-      const dateParts = apt.date.match(/(\d{2})\.(\d{2})\./);
-      if (!dateParts) return true;
-
-      const day = parseInt(dateParts[1]);
-      const month = parseInt(dateParts[2]) - 1; // 0-indexed months
-      const [hours, minutes] = apt.time.split(':').map(Number);
-
-      const aptDate = new Date();
-      aptDate.setMonth(month);
-      aptDate.setDate(day);
-      aptDate.setHours(hours, minutes, 0, 0);
-
-      // Handle year wrap (if scraped in Dec for Jan)
-      const now = new Date();
-      if (month < now.getMonth() - 6) {
-        aptDate.setFullYear(now.getFullYear() + 1);
-      }
-
-      return aptDate >= now;
-    } catch (e) {
-      return true; // Show on error to be safe
-    }
-  });
+  // Filter out appointments in the past using memoized computation
+  const visibleAppointments = useMemo(
+    () => filterPastAppointments(appointments),
+    [appointments]
+  );
 
   const formatLastUpdated = (dateString: string) => {
     if (!mounted) return '';

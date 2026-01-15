@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Sparkles, Droplets, Leaf } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
+import { filterPastAppointments } from '@/utils/filterAppointments';
 import styles from './signage.module.css';
 
 interface Appointment {
@@ -90,46 +91,26 @@ export default function SignagePage() {
         return () => clearInterval(clockTimer);
     }, []);
 
-    // Rotate visible appointments
+    // Filter out appointments in the past using memoized computation
+    const futureAppointments = useMemo(
+        () => filterPastAppointments(appointments),
+        [appointments]
+    );
+
+    // Rotate visible appointments - use futureAppointments length for correct pagination
     useEffect(() => {
-        if (!mounted || appointments.length <= VISIBLE_COUNT) return;
+        if (!mounted || futureAppointments.length <= VISIBLE_COUNT) return;
 
         const rotateMs = settings.signageRotationInterval * 1000;
         const rotateTimer = setInterval(() => {
             setVisibleStart((prev) => {
                 const next = prev + VISIBLE_COUNT;
-                return next >= appointments.length ? 0 : next;
+                return next >= futureAppointments.length ? 0 : next;
             });
         }, rotateMs);
 
         return () => clearInterval(rotateTimer);
-    }, [appointments.length, settings.signageRotationInterval, mounted]);
-
-    // Filter out appointments in the past
-    const futureAppointments = appointments.filter(apt => {
-        try {
-            const dateParts = apt.date.match(/(\d{2})\.(\d{2})\./);
-            if (!dateParts) return true;
-
-            const day = parseInt(dateParts[1]);
-            const month = parseInt(dateParts[2]) - 1;
-            const [hours, minutes] = apt.time.split(':').map(Number);
-
-            const aptDate = new Date();
-            aptDate.setMonth(month);
-            aptDate.setDate(day);
-            aptDate.setHours(hours, minutes, 0, 0);
-
-            const now = new Date();
-            if (month < now.getMonth() - 6) {
-                aptDate.setFullYear(now.getFullYear() + 1);
-            }
-
-            return aptDate >= now;
-        } catch (e) {
-            return true;
-        }
-    });
+    }, [futureAppointments.length, settings.signageRotationInterval, mounted]);
 
     const visibleAppointments = futureAppointments.slice(
         visibleStart,
@@ -197,7 +178,7 @@ export default function SignagePage() {
                                         className={styles.cardImage}
                                         style={{ width: `${settings.signageImageWidth}px`, minWidth: `${settings.signageImageWidth}px` }}
                                     >
-                                        <img src={apt.imageUrl} alt={apt.treatment} />
+                                        <img src={apt.imageUrl} alt={apt.treatment} loading="lazy" />
                                     </div>
                                 )}
                                 <div className={styles.cardAccent} />
@@ -220,9 +201,9 @@ export default function SignagePage() {
                     </div>
                 )}
 
-                {appointments.length > VISIBLE_COUNT && (
+                {futureAppointments.length > VISIBLE_COUNT && (
                     <div className={styles.pagination}>
-                        {Array.from({ length: Math.ceil(appointments.length / VISIBLE_COUNT) }).map((_, i) => (
+                        {Array.from({ length: Math.ceil(futureAppointments.length / VISIBLE_COUNT) }).map((_, i) => (
                             <div
                                 key={i}
                                 className={`${styles.paginationDot} ${Math.floor(visibleStart / VISIBLE_COUNT) === i ? styles.active : ''
