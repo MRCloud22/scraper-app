@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Sparkles, Droplets, Leaf } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 import styles from './signage.module.css';
+import { filterPastAppointments } from '@/utils/filterAppointments';
 
 interface Appointment {
     date: string;
@@ -106,30 +107,9 @@ export default function SignagePage() {
     }, [appointments.length, settings.signageRotationInterval, mounted]);
 
     // Filter out appointments in the past
-    const futureAppointments = appointments.filter(apt => {
-        try {
-            const dateParts = apt.date.match(/(\d{2})\.(\d{2})\./);
-            if (!dateParts) return true;
-
-            const day = parseInt(dateParts[1]);
-            const month = parseInt(dateParts[2]) - 1;
-            const [hours, minutes] = apt.time.split(':').map(Number);
-
-            const aptDate = new Date();
-            aptDate.setMonth(month);
-            aptDate.setDate(day);
-            aptDate.setHours(hours, minutes, 0, 0);
-
-            const now = new Date();
-            if (month < now.getMonth() - 6) {
-                aptDate.setFullYear(now.getFullYear() + 1);
-            }
-
-            return aptDate >= now;
-        } catch (e) {
-            return true;
-        }
-    });
+    const futureAppointments = useMemo(() =>
+        filterPastAppointments(appointments),
+        [appointments]);
 
     const visibleAppointments = futureAppointments.slice(
         visibleStart,
