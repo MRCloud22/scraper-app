@@ -118,24 +118,26 @@ function ListContent() {
                     </div>
                 )}
 
-                {visibleAppointments.map((apt, index) => (
-                    <div key={`${apt.date}-${apt.time}-${index}`} className={styles.row}>
-                        <div className={styles.cell}>{apt.date}</div>
-                        <div className={styles.cell}>{apt.time}</div>
-                        <div className={styles.cell + ' ' + styles.treatment}>{apt.treatment}</div>
-                        <div className={styles.cell + ' ' + styles.price}>{apt.price}</div>
-                        <div className={styles.action}>
-                            <a
-                                href={apt.bookingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={styles.bookButton}
-                            >
-                                Buchen <ChevronRight size={12} />
-                            </a>
+                <div key={currentPage} className={styles.rowsContainer}>
+                    {visibleAppointments.map((apt, index) => (
+                        <div key={`${apt.date}-${apt.time}-${index}`} className={styles.row}>
+                            <div className={styles.cell}>{apt.date}</div>
+                            <div className={styles.cell}>{apt.time}</div>
+                            <div className={styles.cell + ' ' + styles.treatment}>{apt.treatment}</div>
+                            <div className={styles.cell + ' ' + styles.price}>{apt.price}</div>
+                            <div className={styles.action}>
+                                <a
+                                    href={apt.bookingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={styles.bookButton}
+                                >
+                                    Buchen <ChevronRight size={12} />
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
 
                 {totalPages > 1 && (
                     <div className={styles.pagination}>
