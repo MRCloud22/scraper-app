@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { filterPastAppointments } from '@/utils/filterAppointments';
+import { useSettings } from '@/context/SettingsContext';
 import styles from './list.module.css';
 
 interface Appointment {
@@ -25,6 +26,7 @@ interface ApiResponse {
 const ITEMS_PER_PAGE = 6;
 
 function ListContent() {
+    const { settings } = useSettings();
     const searchParams = useSearchParams();
     const hideTitle = searchParams.get('noTitle') === 'true';
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -108,7 +110,7 @@ function ListContent() {
 
                 {futureAppointments.length === 0 && !error && (
                     <div className={styles.empty}>
-                        Aktuell sind keine freien Termine vorhanden.
+                        {settings.emptyStateText}
                     </div>
                 )}
 

@@ -11,13 +11,15 @@ export default function SettingsPage() {
     const [imageWidth, setImageWidth] = useState(settings.signageImageWidth);
     const [rotationInterval, setRotationInterval] = useState(settings.signageRotationInterval);
     const [refreshInterval, setRefreshInterval] = useState(settings.signageRefreshInterval);
+    const [emptyStateText, setEmptyStateText] = useState(settings.emptyStateText);
     const [saved, setSaved] = useState(false);
 
     const handleSave = () => {
         updateSettings({
             signageImageWidth: imageWidth,
             signageRotationInterval: rotationInterval,
-            signageRefreshInterval: refreshInterval
+            signageRefreshInterval: refreshInterval,
+            emptyStateText: emptyStateText
         });
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
@@ -28,6 +30,7 @@ export default function SettingsPage() {
         setImageWidth(140);
         setRotationInterval(8);
         setRefreshInterval(5);
+        setEmptyStateText('Aktuell sind keine freien Termine vorhanden.');
     };
 
     return (
@@ -168,6 +171,34 @@ export default function SettingsPage() {
                                 />
                                 <span>min</span>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                        <Settings size={22} />
+                        <h2>Texte & Hinweise</h2>
+                    </div>
+
+                    <div className={styles.settingItem}>
+                        <div className={styles.settingInfo}>
+                            <label htmlFor="emptyStateText" className={styles.settingLabel}>
+                                Hinweis bei keinen Terminen
+                            </label>
+                            <p className={styles.settingDescription}>
+                                Dieser Text wird angezeigt, wenn keine freien Termine verfügbar sind.
+                            </p>
+                        </div>
+                        <div className={styles.settingControl}>
+                            <input
+                                type="text"
+                                id="emptyStateText"
+                                value={emptyStateText}
+                                onChange={(e) => setEmptyStateText(e.target.value)}
+                                className={styles.textInput}
+                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                            />
                         </div>
                     </div>
                 </section>

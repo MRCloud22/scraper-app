@@ -6,13 +6,16 @@ export interface AppSettings {
     signageImageWidth: number; // in pixels
     signageRotationInterval: number; // in seconds
     signageRefreshInterval: number; // in minutes
+    emptyStateText: string;
 }
 
 const defaultSettings: AppSettings = {
     signageImageWidth: 140,
     signageRotationInterval: 8,
     signageRefreshInterval: 5,
+    emptyStateText: 'Aktuell sind keine freien Termine vorhanden.',
 };
+
 
 interface SettingsContextType {
     settings: AppSettings;
